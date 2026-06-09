@@ -664,7 +664,16 @@
             .matrix-cell .mc-title { font-size: 12px; letter-spacing: 0; }
             .matrix-cell .mc-code { font-size: 11px; padding: 2px 8px; }
         }
-    </style>
+            /* Matriz: reflejar el resultado del participante */
+        .matrix-cell.mc-on { border-color:#FF6B1A; box-shadow:0 0 0 3px #FF6B1A, 0 10px 30px rgba(255,107,26,0.6); transform:translateY(-3px); }
+        .matrix-compromiso.mc-on { box-shadow:0 0 0 3px #fff, 0 10px 36px rgba(255,107,26,0.85); }
+        .matrix-grid.scored .matrix-cell:not(.mc-on), .matrix-grid.scored .matrix-compromiso:not(.mc-on) { opacity:0.45; }
+        .mc-pts { margin-top:6px; font-size:14px; font-weight:800; color:#FF8C42; }
+        .matrix-compromiso .mc-pts { color:#fff; }
+        .matrix-you { position:absolute; z-index:20; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:5px; pointer-events:none; transition:left .6s ease, top .6s ease; }
+        .matrix-you .dot { width:18px; height:18px; border-radius:50%; background:#fff; border:3px solid #FF6B1A; box-shadow:0 0 0 5px rgba(255,107,26,0.3), 0 0 18px rgba(255,107,26,0.9); }
+        .matrix-you .lbl { font-size:11px; font-weight:800; letter-spacing:1px; color:#fff; background:#FF6B1A; padding:2px 9px; border-radius:999px; white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,0.4); }
+</style>
 </head>
 <body>
     <!-- Modal de selección de idioma -->
@@ -796,12 +805,12 @@
                         <span class="matrix-label matrix-label-yo">YO</span>
                         <span class="matrix-label-interes-otro">Interés otro</span>
                         <span class="matrix-label-interes-propio">Interés propio</span>
-                        <div class="matrix-grid">
-                            <div class="matrix-cell mc-acomodacion"><div class="mc-title">Acomodación</div><div class="mc-code">E5</div></div>
-                            <div class="matrix-cell mc-asociacion"><div class="mc-title">Asociación</div><div class="mc-code">E2</div></div>
-                            <div class="matrix-cell mc-evitacion"><div class="mc-title">Evitación</div><div class="mc-code">E4</div></div>
-                            <div class="matrix-cell mc-competicion"><div class="mc-title">Competición</div><div class="mc-code">E1</div></div>
-                            <div class="matrix-compromiso"><div class="mc-title">Compromiso</div><div class="mc-code">E3</div></div>
+                        <div class="matrix-grid" id="matrixGrid">
+                            <div class="matrix-cell mc-acomodacion"><div class="mc-title">Acomodación</div><div class="mc-code">E5</div><div class="mc-pts"></div></div>
+                            <div class="matrix-cell mc-asociacion"><div class="mc-title">Asociación</div><div class="mc-code">E2</div><div class="mc-pts"></div></div>
+                            <div class="matrix-cell mc-evitacion"><div class="mc-title">Evitación</div><div class="mc-code">E4</div><div class="mc-pts"></div></div>
+                            <div class="matrix-cell mc-competicion"><div class="mc-title">Competición</div><div class="mc-code">E1</div><div class="mc-pts"></div></div>
+                            <div class="matrix-compromiso"><div class="mc-title">Compromiso</div><div class="mc-code">E3</div><div class="mc-pts"></div></div><div class="matrix-you" id="matrixYou" style="display:none"><span class="dot"></span><span class="lbl">TU</span></div>
                         </div>
                     </div>
                     <div class="matrix-legend">
@@ -1138,7 +1147,7 @@
 
             document.getElementById('quizScreen').classList.remove('active');
             document.getElementById('resultsScreen').classList.add('active');
-            document.getElementById('resultsScreen').scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('resultsScreen').scrollIntoView({ behavior: 'smooth' }); renderMatrix();
 
             const scores = calculateResults();
             const total = scores.reduce((a, b) => a + b, 0);
@@ -1163,6 +1172,25 @@
                     </div>
                 `;
             }).join('');
+        }
+
+        function renderMatrix(){
+            var sc = calculateResults();
+            var grid = document.getElementById('matrixGrid');
+            if(!grid) return;
+            var cellSel = ['.mc-competicion','.mc-asociacion','.matrix-compromiso','.mc-evitacion','.mc-acomodacion'];
+            grid.classList.remove('scored');
+            var i, el, pts;
+            for(i=0;i<cellSel.length;i++){ el=grid.querySelector(cellSel[i]); if(el){ el.classList.remove('mc-on'); pts=el.querySelector('.mc-pts'); if(pts) pts.textContent=''; } }
+            var maxI=0; for(i=1;i<5;i++){ if(sc[i]>sc[maxI]) maxI=i; }
+            for(i=0;i<cellSel.length;i++){ el=grid.querySelector(cellSel[i]); if(!el) continue; pts=el.querySelector('.mc-pts'); if(pts) pts.textContent=sc[i]+' / 12'; if(i===maxI) el.classList.add('mc-on'); }
+            grid.classList.add('scored');
+            var xRaw = sc[0] + sc[1] + 0.5*sc[2];
+            var yRaw = sc[4] + sc[1] + 0.5*sc[2];
+            var xPct = Math.max(8, Math.min(92, xRaw/30*100));
+            var yPct = Math.max(8, Math.min(92, yRaw/30*100));
+            var you = document.getElementById('matrixYou');
+            if(you){ you.style.left=xPct+'%'; you.style.top=(100-yPct)+'%'; you.style.display='flex'; }
         }
 
         function restart() {
